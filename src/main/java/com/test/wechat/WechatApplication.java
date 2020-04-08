@@ -1,11 +1,13 @@
 package com.test.wechat;
 
+import com.mxixm.fastboot.weixin.annotation.EnableWxMvc;
 import com.mxixm.fastboot.weixin.annotation.WxApplication;
 import com.mxixm.fastboot.weixin.annotation.WxController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -13,6 +15,8 @@ import java.net.UnknownHostException;
 
 @WxApplication
 @Slf4j
+@EnableWxMvc
+@EnableAsync //开启异步调用
 public class WechatApplication {
 
     public static void main(String[] args) throws UnknownHostException {
