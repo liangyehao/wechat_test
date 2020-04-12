@@ -7,26 +7,67 @@ import com.mxixm.fastboot.weixin.module.message.WxMessage;
 import com.mxixm.fastboot.weixin.module.message.WxMessageBody;
 import com.mxixm.fastboot.weixin.module.message.WxUserMessage;
 import com.mxixm.fastboot.weixin.module.web.WxRequest;
+import com.test.wechat.dto.tuling.TulingReqDto;
+import com.test.wechat.dto.tuling.TulingResDto;
+import com.test.wechat.util.TulingUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
 
 @WxController
 @Slf4j
 public class WxTextController {
 
+    @Value("${tuling.apiKey}")
+    private String apiKey;
+    @Value("${tuling.userId}")
+    private String userId;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @WxMessageMapping(type = WxMessage.Type.TEXT, wildcard = "**")
     @WxAsyncMessage
-    public WxUserMessage text(WxRequest wxRequest, String content) {
+    public Object text(WxRequest wxRequest, String content) {
         log.info("调用了 text WxMessage.Type.TEXT wxRequest==>{}", wxRequest);
-        WxUserMessage build = null;
 
-        build = WxMessage.newsBuilder()
-                .addItem(WxMessageBody.News.Item.builder().title("百度一下").description("点击查看")
-                        .picUrl("http://mmbiz.qpic.cn/mmbiz_jpg/BXa2ick0Zc8nTCVWh6DFJic6baxwqLiazWaSxRkXkWZmVvic5Z0I9yEcPvZjcYesd8d41ZiaZ7oAcV0vW6W4qPRn5icQ/0")
-                        .url("www.baidu.com").build())
-                .build();
+        System.out.println(content);
 
-        return build;
+        try {
+            TulingReqDto dto = new TulingReqDto();
+            //设置用户信息
+            TulingReqDto.UserInfoBean userInfoBean = new TulingReqDto.UserInfoBean();
+            userInfoBean.setApiKey(apiKey);
+            userInfoBean.setUserId(userId);
+            //设置请求文本
+            TulingReqDto.PerceptionBean perceptionBean = new TulingReqDto.PerceptionBean();
+            TulingReqDto.PerceptionBean.InputTextBean inputTextBean = new TulingReqDto.PerceptionBean.InputTextBean();
+            inputTextBean.setText(content);
+            perceptionBean.setInputText(inputTextBean);
+
+            dto.setUserInfo(userInfoBean);
+            dto.setPerception(perceptionBean);
+
+            TulingResDto tulingResult = TulingUtil.getTulingResult(restTemplate, dto);
+            List<TulingResDto.ResultsBean> results = tulingResult.getResults();
+
+            if (results.get(0).getValues().getUrl()!=null){
+                return WxMessage.newsBuilder()
+                        .addItem(WxMessageBody.News.Item.builder()
+                                .title(content).description(results.get(1).getValues().getText())
+                                .picUrl("https://c-ssl.duitang.com/uploads/item/201602/24/20160224232216_hy5EL.jpeg")
+                                .url(results.get(0).getValues().getUrl()).build())
+                        .build();
+            }
+
+            return results.get(0).getValues().getText();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "我还不懂怎么回到您的这个问题呢，您可以试试别的问题（如：广州天气）";
+        }
 
     }
 
